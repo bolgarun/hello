@@ -1,0 +1,1 @@
+message = '{"personalizations": [{"to": [{"email": "%s"}],"subject": "Activate your acount"}],"from": {"email": "kurustaras@gmail.com"},"content": [{"type": "text/plain","value": "Thanks for your registration! Please click here: %s"}]}'
