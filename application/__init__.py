@@ -4,7 +4,6 @@ from .config import Config
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 
-
 app = Flask(__name__)
 api = Api(app)
 db = SQLAlchemy(app)
@@ -12,8 +11,8 @@ migrate = Migrate(app, db)
 
 app.config.from_object(Config)
 
-from application import routes, models
+from auth import routes, models
 
-api.add_resource(routes.UserApiHandler, '/user/create', endpoint='create')	
+api.add_resource(routes.UserApiHandler, '/user/create', endpoint='create')
 api.add_resource(routes.UserApiHandler, '/user/update/<int:user_id>', endpoint='update')
 api.add_resource(routes.UserApiLogin, '/user/login', endpoint='login')

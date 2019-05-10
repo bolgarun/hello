@@ -1,10 +1,12 @@
 from flask_restful import Resource
 from flask import request
-from application.models import User, Session
-from application import db
-from sqlalchemy.orm import sessionmaker
-from application.helpers import databases_conection, validate_email, validate_password, hash_password, check_if_letter, validate_age, validate_gender, validate_country, validate_nickname, verify_password
-from application.exceptions import ValidationError
+from auth.models import User, Session
+from auth.helpers import (
+    validate_email, validate_password, hash_password,
+    check_if_letter, validate_age, validate_gender,
+    validate_country, validate_nickname, verify_password)
+from application.helpers import databases_conection
+from auth.exceptions import ValidationError
 from .helpers import sg
 from .constants import message
 import json
@@ -23,19 +25,20 @@ class UserApiHandler(Resource):
 
         email = validate_email(data['email'])
 
-        if session.query(User).filter(User.email==email).first():
+        if session.query(User).filter(User.email == email).first():
             return {'status': 'Failed'}, 500
 
-        if session.query(User).filter(User.nickname==validate_nickname(data['nickname'])).first():
+        if session.query(User).filter(User.nickname == validate_nickname(
+                data['nickname'])).first():
             return {'status': 'Failed'}, 500
 
         try:
             fake_user = User(
                 nickname=validate_nickname(data['nickname']),
                 first_name=check_if_letter(data['first_name']),
-                last_name=check_if_letter(data['last_name']), 
-                email=email, 
-                password_hash=hash_password(validate_password(data['password_hash'])),
+                last_name=check_if_letter(data['last_name']),
+                email=email,
+                password=hash_password(validate_password(data['password'])),
                 age=validate_age(data['age']),
                 gender=validate_gender(data['gender']),
                 country=validate_country(data['country'])
@@ -51,7 +54,7 @@ class UserApiHandler(Resource):
         sg.send(json.loads(message % (email, 't')))
 
         return {'status': 'success'}, 201
-        
+
     @databases_conection
     def put(self, user_id, **kwargs):
 
@@ -61,14 +64,14 @@ class UserApiHandler(Resource):
 
             if session.query(User).get(user_id):
 
-
                 session.query(User).filter(User.id == user_id).\
-                update({"active" : True})
+                    update({"is_active": True})
                 session.commit()
 
                 return {'status': 'success'}, 201
 
         return {'status': 'failed'}, 400
+
 
 class UserApiLogin(Resource):
     @databases_conection
@@ -78,27 +81,27 @@ class UserApiLogin(Resource):
 
         data = request.get_json()
 
-        password = data['password_hash']
+        password = data['password']
         nickname = data['nickname']
 
-        user_check = session.query(User).filter(User.nickname==nickname).first()
+        user = session.query(User).filter(User.nickname == nickname).first()
 
-        if not user_check:
+        if not user:
             return {'status': 'failed'}, 400
 
-        check_password = verify_password(user_check.password_hash, password)
+        check_password = verify_password(user.password, password)
 
-        payload = {
-            'user_id' : user_check.id,
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, seconds=60),
-        }
+        if nickname == user.nickname and check_password:
+            payload = {
+                'user_id': user.id,
+                'exp': datetime.datetime.utcnow() +
+                datetime.timedelta(days=0, seconds=60),
+                }
 
-
-        if nickname == user_check.nickname and check_password == True:
             token = jwt.encode(payload, app.config.get('SECRET_KEY'))
 
             new_token = Session(
-                    user_id=user_check.id,
+                    user_id=user.id,
                     session_token=token)
             session.add(new_token)
             session.commit()
