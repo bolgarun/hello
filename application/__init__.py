@@ -13,6 +13,13 @@ app.config.from_object(Config)
 
 from auth import routes, models
 
+
 api.add_resource(routes.UserApiHandler, '/user/create', endpoint='create')
 api.add_resource(routes.UserApiHandler, '/user/update/<int:user_id>', endpoint='update')
 api.add_resource(routes.UserApiLogin, '/user/login', endpoint='login')
+
+from blog import routes, models
+
+
+api.add_resource(routes.ArticlText, '/text/created', endpoint='created')
+api.add_resource(routes.ArticlText, '/text/<int:user>', endpoint='user')

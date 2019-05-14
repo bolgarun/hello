@@ -91,14 +91,13 @@ class UserApiLogin(Resource):
 
         check_password = verify_password(user.password, password)
 
-        if nickname == user.nickname and check_password:
-            payload = {
+        if nickname == user.nickname and check_password and user.is_active:
+
+            token = jwt.encode({
                 'user_id': user.id,
                 'exp': datetime.datetime.utcnow() +
-                datetime.timedelta(days=0, seconds=60),
-                }
-
-            token = jwt.encode(payload, app.config.get('SECRET_KEY'))
+                datetime.timedelta(minutes=60),
+                }, app.config.get('SECRET_KEY'))
 
             new_token = Session(
                     user_id=user.id,
